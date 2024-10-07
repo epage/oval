@@ -58,7 +58,7 @@ use std::{
 #[derive(Debug, PartialEq, Clone)]
 pub struct Buffer {
     /// the Vec containing the data
-    memory: Vec<u8>,
+    memory: Box<[u8]>,
     /// the current beginning of the available data
     position: usize,
     /// the current end of the available data
@@ -70,7 +70,7 @@ impl Buffer {
     /// allocates a new buffer of maximum size `capacity`
     pub fn with_capacity(capacity: usize) -> Buffer {
         Buffer {
-            memory: vec![0u8; capacity],
+            memory: vec![0u8; capacity].into_boxed_slice(),
             position: 0,
             end: 0,
         }
@@ -81,7 +81,7 @@ impl Buffer {
     /// the buffer starts full, its available data size is exactly `data.len()`
     pub fn from_slice(data: &[u8]) -> Buffer {
         Buffer {
-            memory: Vec::from(data),
+            memory: Vec::from(data).into_boxed_slice(),
             position: 0,
             end: data.len(),
         }
@@ -95,7 +95,9 @@ impl Buffer {
             return false;
         }
 
-        self.memory.resize(new_size, 0);
+        let mut memory = vec![0u8; new_size].into_boxed_slice();
+        memory[0..self.capacity()].copy_from_slice(&self.memory);
+        self.memory = memory;
         true
     }
 
